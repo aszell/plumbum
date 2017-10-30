@@ -32,6 +32,23 @@ class StatRes(object):
     st_ctime = ctime = property(lambda self: self[9])
 
 
+class StatResTerse(object):
+    """POSIX-like stat result"""
+    def __init__(self, tup):
+        self._tup = tuple(tup)
+    def __getitem__(self, index):
+        return self._tup[index]
+    st_mode = mode = property(lambda self: self[2])
+    st_ino = ino = property(lambda self: self[6])
+    #st_dev = dev = property(lambda self: self[2])
+    st_nlink = nlink = property(lambda self: self[7])
+    st_uid = uid = property(lambda self: self[3])
+    st_gid = gid = property(lambda self: self[4])
+    st_size = size = property(lambda self: self[0])
+    st_atime = atime = property(lambda self: self[10])
+    st_mtime = mtime = property(lambda self: self[11])
+    st_ctime = ctime = property(lambda self: self[12])
+
 class RemotePath(Path):
     """The class implementing remote-machine paths"""
 
