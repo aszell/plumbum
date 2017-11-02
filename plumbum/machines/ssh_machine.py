@@ -316,13 +316,20 @@ class PuttyMachine(SshMachine):
                  scp_command=None,
                  ssh_opts=(),
                  scp_opts=(),
+                 password = None,
                  encoding="utf8",
                  connect_timeout=10,
                  new_session=False):
         if ssh_command is None:
-            ssh_command = local["plink"]
+            if password is not None:
+                ssh_command = local["plink"]['-pw', password]
+            else:
+                ssh_command = local["plink"]
         if scp_command is None:
-            scp_command = local["pscp"]
+            if password is not None:
+                scp_command = local["pscp"]['-pw', password]
+            else:
+                scp_command = local["pscp"]
         if not ssh_opts:
             ssh_opts = ["-ssh"]
         if user is None:
