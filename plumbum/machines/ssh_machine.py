@@ -6,6 +6,7 @@ from plumbum.path.local import LocalPath
 from plumbum.path.remote import RemotePath
 from plumbum.commands import ProcessExecutionError, shquote
 import warnings
+import sys
 
 
 class SshTunnel(object):
@@ -365,3 +366,14 @@ class PuttyMachine(SshMachine):
             self.popen(
                 (), (["-t"] if isatty else ["-T"]), new_session=new_session),
             self.custom_encoding, isatty, self.connect_timeout)
+            
+def RemoteMachine(*args, **kwargs):
+    '''
+    Remote machine constructor function.  Forwards all arguments on to the
+    appropriate constructor for this platform.  On windows this is
+    ``plumbum.PuttyMachine`` and on other platforms `plumbum.SshMachine`
+    '''
+    if sys.platform.startswith('win'):
+        return PuttyMachine(*args, **kwargs)
+    else:
+        return SshMachine(*args, **kwargs)

@@ -37,7 +37,7 @@ See https://plumbum.readthedocs.io for full details
 from plumbum.commands import ProcessExecutionError, CommandNotFound, ProcessTimedOut, ProcessLineTimedOut
 from plumbum.commands import FG, BG, TEE, TF, RETCODE, ERROUT, NOHUP
 from plumbum.path import Path, LocalPath, RemotePath
-from plumbum.machines import local, BaseRemoteMachine, SshMachine, PuttyMachine
+from plumbum.machines import local, BaseRemoteMachine, SshMachine, PuttyMachine, RemoteMachine
 from plumbum.version import version
 
 __author__ = "Tomer Filiba (tomerfiliba@gmail.com)"
