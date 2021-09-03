@@ -29,7 +29,12 @@ class RemoteEnv(BaseEnv):
             lines = session.run("env; echo")[1].splitlines()
             split = (line.split('=', 1) for line in lines)
             keys = (line[0] for line in split if len(line) > 1)
-            runs = ((key, session.run('printenv "%s"; echo' % key))
+
+            # check whether printenv works - in busybox not always
+            res = session.run('printenv "USER"; echo')
+            cmd = 'echo "$' if  res[2] else 'printenv "'
+
+            runs = ((key, session.run('%s%s"; echo' % (cmd, key)))
                     for key in keys)
             self._curr = dict(
                 (key, run[1].rstrip('\n')) for (key, run) in runs
@@ -362,6 +367,10 @@ class BaseRemoteMachine(BaseMachine):
         else:
             stat_cmd = "stat -f '%HT,%Xp,%i,%d,%l,%u,%g,%z,%a,%m,%c' "
         rc, out, _ = self._session.run(stat_cmd + shquote(fn), retcode=None)
+
+        # some debug help to determine whether stat command is OK
+        #print("uname: %s\nCmd: %s\nRes:\n%s" % (self.uname,stat_cmd+shquote(fn), out))
+
         if rc != 0:
             # attempt terse format if -c is not supported on busybox
             stat_cmd = "stat -t "
