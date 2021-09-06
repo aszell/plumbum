@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import sys
 import warnings
 
 from plumbum.commands import ProcessExecutionError, shquote
@@ -382,3 +383,16 @@ class PuttyMachine(SshMachine):
             isatty,
             self.connect_timeout,
         )
+
+def RemoteMachine(*args, **kwargs):
+    '''
+    Remote machine constructor function.  Forwards all arguments on to the
+    appropriate constructor for this platform.  On windows this is
+    ``plumbum.PuttyMachine`` and on other platforms `plumbum.SshMachine`
+    '''
+    if sys.platform.startswith('win'):
+        print(1)
+        return PuttyMachine(*args, **kwargs)
+    else:
+        print(2)
+        return SshMachine(*args, **kwargs)

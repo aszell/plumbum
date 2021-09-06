@@ -51,7 +51,7 @@ from plumbum.commands import (
     ProcessLineTimedOut,
     ProcessTimedOut,
 )
-from plumbum.machines import BaseRemoteMachine, PuttyMachine, SshMachine, local
+from plumbum.machines import BaseRemoteMachine, PuttyMachine, SshMachine, RemoteMachine, local
 from plumbum.path import LocalPath, Path, RemotePath
 from plumbum.version import version
 
