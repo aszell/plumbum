@@ -8,7 +8,7 @@ from plumbum.lib import ProcInfo, _setdoc, six
 from plumbum.machines.base import BaseMachine
 from plumbum.machines.env import BaseEnv
 from plumbum.machines.local import LocalPath
-from plumbum.path.remote import RemotePath, RemoteWorkdir, StatRes
+from plumbum.path.remote import RemotePath, RemoteWorkdir, StatRes, StatResTerse
 
 
 class RemoteEnv(BaseEnv):
@@ -31,7 +31,12 @@ class RemoteEnv(BaseEnv):
             lines = session.run("env; echo")[1].splitlines()
             split = (line.split("=", 1) for line in lines)
             keys = (line[0] for line in split if len(line) > 1)
-            runs = ((key, session.run('printenv "%s"; echo' % key)) for key in keys)
+            
+            # check whether printenv works - in busybox not always, use echo $ instead
+            res = session.run('printenv "USER"; echo')
+            cmd = 'echo "$' if  res[2] else 'printenv "'
+
+            runs = ((key, session.run('%s%s"; echo' % (cmd, key))) for key in keys)
             self._curr = {
                 key: run[1].rstrip("\n")
                 for (key, run) in runs
@@ -374,12 +379,50 @@ class BaseRemoteMachine(BaseMachine):
         else:
             stat_cmd = "stat -f '%HT,%Xp,%i,%d,%l,%u,%g,%z,%a,%m,%c' "
         rc, out, _ = self._session.run(stat_cmd + shquote(fn), retcode=None)
+        
+        # some debug help to determine whether stat command is OK
+        #print("uname: %s\nCmd: %s\nRes:\n%s" % (self.uname,stat_cmd+shquote(fn), out))
+
         if rc != 0:
-            return None
-        statres = out.strip().split(",")
-        text_mode = statres.pop(0).lower()
-        res = StatRes((int(statres[0], 16),) + tuple(int(sr) for sr in statres[1:]))
-        res.text_mode = text_mode
+            # attempt terse format if -c is not supported on busybox
+            stat_cmd = "stat -t "
+            rc, out, _ = self._session.run(stat_cmd + shquote(fn), retcode=None)
+            if rc != 0:
+                return None
+            else:
+                statres = out.strip().split(" ")
+                fname = statres.pop(0).lower()
+                # mode
+                statres[2] = int(statres[2], 16)
+                statres[5] = 0
+                #print statres
+                res = StatResTerse(tuple(int(sr) for sr in statres))
+                # Important!
+                # repeat stat in a different format as our terse stat without normal format
+                # option compiled in reports all files with 'd' regardless of whether it is a dir or not:
+                # without format compiled in:
+                #  ~ # stat /bin/ps
+                #  File: '/bin/ps'
+                #  Size: 71816           Blocks: 144        IO Block: 4096   regular file
+                # good, but
+                #  ~ # stat -t /bin/ps
+                #  /bin/ps 71816 144 81fd 0 0 d 2490475 1 0 0 1507722269 1507722269 1507722269 4096
+                # with format compiled in (notice the '0 0 b' part instead of '0 0 d'):
+                #  ~ # stat -t /bin/ps
+                #  /bin/ps 71772 144 81fd 0 0 b 4980955 1 0 0 1508858360 1508854706 1508854706 4096
+                # (May not be because of the missing -c flag, one was on MDR HS, other on MDR, compiled on different PC.)
+                stat_cmd = "stat "
+                rc, out, _ = self._session.run(stat_cmd + shquote(fn), retcode=None)
+                lines = out.split("\n")
+                broken_line = lines[1].split("  ")
+                text_mode = broken_line[-1]
+                res.text_mode = text_mode
+        else:        
+            statres = out.strip().split(",")
+            text_mode = statres.pop(0).lower()
+            res = StatRes((int(statres[0], 16),) + tuple(int(sr) for sr in statres[1:]))
+            res.text_mode = text_mode
+            
         return res
 
     def _path_delete(self, fn):
