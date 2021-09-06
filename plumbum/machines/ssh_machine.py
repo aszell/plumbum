@@ -337,6 +337,7 @@ class PuttyMachine(SshMachine):
         scp_command=None,
         ssh_opts=(),
         scp_opts=(),
+        password = None,
         encoding="utf8",
         connect_timeout=10,
         new_session=False,
@@ -353,6 +354,9 @@ class PuttyMachine(SshMachine):
             ssh_opts.extend(["-P", str(port)])
             scp_opts = list(scp_opts) + ["-P", str(port)]
             port = None
+        if password is not None:
+            ssh_opts.extend(['-pw', password])
+            scp_opts = list(scp_opts) + ['-pw', password]
         SshMachine.__init__(
             self,
             host,
